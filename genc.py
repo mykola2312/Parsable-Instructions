@@ -1,16 +1,24 @@
+import re
 import xml.etree.ElementTree as ET
 
 class OpCode:
+    OPCODE_REGEX = re.compile("[0-9a-fA-F][0-9a-fA-F]")
+
     def __init__(self, ins, operand_encodings):
         self.x32m = ins.attrib["x32m"]
         self.x64m = ins.attrib["x64m"]
         self.args = ins.find("args").text
 
         opc = ins.find("opc")
-        if opc:
-            openc = opc.attrib.get("openc")
-            if openc:
-                self.operand_encoding = operand_encodings[openc]
+        self.opcode = OpCode.OPCODE_REGEX.findall(opc.text)
+
+        openc = opc.attrib.get("openc")
+        if openc:
+            self.operand_encoding = operand_encodings.get(openc, openc)
+        else: self.operand_encoding = None
+    
+    def __str__(self):
+        return f"\topcode {self.opcode} args {self.args} op_enc {self.operand_encoding}"
 
 class Instruction:
     def __init__(self, common):
@@ -43,7 +51,8 @@ def parse_file(path):
     
     for instruction in instructions:
         print(instruction.brief)
-        print(instruction.opcodes)
+        for opcode in instruction.opcodes:
+            print(opcode)
 
 
 if __name__ == "__main__":
