@@ -2,7 +2,7 @@ import re
 import xml.etree.ElementTree as ET
 
 class OpCode:
-    OPCODE_REGEX = re.compile("[0-9a-fA-F][0-9a-fA-F]")
+    OPCODE_REGEX = re.compile("[0-9A-F][0-9A-F]")
 
     def __init__(self, ins, operand_encodings):
         self.x32m = ins.attrib["x32m"]
