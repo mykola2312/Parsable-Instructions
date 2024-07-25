@@ -39,6 +39,9 @@ class Instruction:
         self.opcodes = []
         for ins in common.iter("ins"):
             self.opcodes.append(OpCode(ins, operand_encodings))
+        
+        # remove 16 bit real mode displacement value opcodes
+        self.opcodes = list(filter(lambda op: op.args != "rel16", self.opcodes))
 
 
 def parse_file(path):
