@@ -1,7 +1,6 @@
-# IMPORTANT:
-The project is dead ! No longer supported. 
+# Fork
 
-Consider using [opcodesDB](https://github.com/MahdiSafsafi/opcodesDB).
+Project to parse and embed instruction info into ```rtdisasm``` component of [blackjack](https://github.com/mykola2312/blackjack)
 
 # Parsable-Instructions
 List of all instructions found in *Intel* and *AMD* documentations, listed into ***XML files*** for easy parsing.
