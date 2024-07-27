@@ -1,0 +1,3 @@
+Just parse all prefixes and skip them, but some of the prefixes like 0x66 can dictate size of immediate
+"args" parser field would tell if instruction has immediate and what type it could be,
+while "op_enc" dictates presense of ModRM, and ModRM tells if instruction has SIB byte
