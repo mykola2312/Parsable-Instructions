@@ -21,8 +21,12 @@ class OpCode:
         return f"\topcode {self.opcode} args {self.args} op_enc {self.operand_encoding}"
 
 class Instruction:
-    SKIP_16BIT_REALMODE = ["rel16", "ptr16:16"]
+    SKIP_16BIT_REALMODE = ["rel16", "imm16", "ptr16:16"]
 
+    def contains_16bit_mode(args):
+        for needle in Instruction.SKIP_16BIT_REALMODE:
+            if needle in args:
+                return True
 
     def __init__(self, common):
         self.brief = common.find("brief").text
@@ -44,7 +48,7 @@ class Instruction:
             self.opcodes.append(OpCode(ins, operand_encodings))
         
         # remove 16 bit real mode displacement value opcodes
-        self.opcodes = list(filter(lambda op: op.args not in Instruction.SKIP_16BIT_REALMODE, self.opcodes))
+        self.opcodes = list(filter(lambda op: not Instruction.contains_16bit_mode(op.args), self.opcodes))
 
 
 def parse_file(path):
