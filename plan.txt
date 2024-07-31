@@ -1,4 +1,4 @@
-Just parse all prefixes and skip them, but some of the prefixes like 0x66 can dictate size of immediate
-"args" parser field would tell if instruction has immediate and what type it could be,
-while "op_enc" dictates presense of ModRM, and ModRM tells if instruction has SIB byte.
-Decode VEX prefixes. 0xC5 for 3-byte VEX and 0xC4 for 2-byte prefix
+The Intel OpCode Syntax can tell if there is ModRM byte, as well as if registers is being encoded in opcode (rb for example),
+and can tell size of immediate (ib iw id for example). The /digit can also indiciate presense of ModRM.
+The size of displacement is also dictated by cw/cd.
+VEX prefixes. 0xC5 for 3-byte VEX and 0xC4 for 2-byte prefix
