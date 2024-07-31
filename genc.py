@@ -19,6 +19,15 @@ class OpCode:
     
     def __str__(self):
         return f"\topcode {self.opcode} args {self.args} op_enc {self.operand_encoding}"
+    
+    def __eq__(self, other):
+        return self.opcode == other.opcode and self.operand_encoding == other.operand_encoding
+    
+    def __key(self):
+        return ("".join(self.opcode), "".join(self.operand_encoding or []))
+    
+    def __hash__(self):
+        return hash(self.__key())
 
 class Instruction:
     SKIP_16BIT_REALMODE = ["rel16", "imm16", "ptr16:16"]
@@ -49,6 +58,12 @@ class Instruction:
         
         # remove 16 bit real mode displacement value opcodes
         self.opcodes = list(filter(lambda op: not Instruction.contains_16bit_mode(op.args), self.opcodes))
+
+        # de-duplicate opcodes with set
+        _opcodes = self.opcodes
+        self.opcodes = set()
+        for op in _opcodes:
+            self.opcodes.add(op)
 
 
 def parse_file(path):
