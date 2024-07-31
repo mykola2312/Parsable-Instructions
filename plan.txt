@@ -1,4 +1,4 @@
-The Intel OpCode Syntax can tell if there is ModRM byte, as well as if registers is being encoded in opcode (rb for example),
+The Intel OpCode Syntax can tell if there is ModRM byte, as well as if registers are encoded directly in opcode (rb for example),
 and can tell size of immediate (ib iw id for example). The /digit can also indiciate presense of ModRM.
 The size of displacement is also dictated by cw/cd.
 VEX prefixes. 0xC5 for 3-byte VEX and 0xC4 for 2-byte prefix
