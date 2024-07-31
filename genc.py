@@ -25,14 +25,29 @@ class Instruction:
         value = Instruction.VALUE_REGEX.search(opc)
         opreg = Instruction.OPREG_REGEX.search(opc)
 
-        print(ins.find("mnem").text)
-        if rex: print("rex\t", rex.group(1))
-        print(bytes)
-        if digit: print("digit\t", digit.group(1))
-        if modrm: print("modrm\t", modrm.group(0))
-        if imm: print("imm\t", imm.group(1))
-        if value: print("value\t", value.group(1))
-        if opreg: print("opreg\t", opreg.group(1))
+        self.mnemonic = ins.find("mnem").text
+        self.bytes = bytes
+
+        self.rex = None
+        self.digit = None
+        self.modrm = False
+        self.imm = None
+        self.value = None
+        self.opreg = None
+
+        if rex: self.rex = rex.group(1)
+        if digit: self.digit = int(digit.group(1))
+        if modrm: self.modrm = True
+        if imm: self.imm = imm.group(1)
+        if value: self.value = value.group(1)
+        if opreg: self.opreg = opreg.group(1)
+
+        self.has_modrm = self.modrm or self.digit is not None
+
+        print(self)
+    
+    def __str__(self):
+        return f"{self.mnemonic} rex {self.rex} bytes {self.bytes} has_modrm {self.has_modrm} digit {self.digit} modrm {self.modrm} imm {self.imm} value {self.value} opreg {self.opreg}"
 
 class InstructionGroup:
     def __init__(self, common):
