@@ -1,83 +1,51 @@
 import re
 import xml.etree.ElementTree as ET
 
-class OpCode:
-    OPCODE_REGEX = re.compile("[0-9A-F][0-9A-F]")
+class Instruction:
+    REX_REGEX = re.compile("^REX\\.(.)")
+    BYTES_REGEX = re.compile("([0-9A-F][0-9A-F])")
+    DIGIT_REGEX = re.compile("\\/(\\d)")
+    MODRM_REGEX = re.compile("\\/r")
+    IMM_REGEX = re.compile("i(.)")
+    VALUE_REGEX = re.compile("c(.)")
+    OPREG_REGEX = re.compile("r(.)")
 
-    def __init__(self, ins, operand_encodings):
+    def __init__(self, ins):
         self.x32m = ins.attrib["x32m"]
         self.x64m = ins.attrib["x64m"]
-        self.args = ins.find("args").text
+        
+        opc = ins.find("opc").text
+        if "VEX" in opc: return
 
-        opc = ins.find("opc")
-        self.opcode = OpCode.OPCODE_REGEX.findall(opc.text)
+        rex = Instruction.REX_REGEX.search(opc)
+        bytes = Instruction.BYTES_REGEX.findall(opc)
+        digit = Instruction.DIGIT_REGEX.search(opc)
+        modrm = Instruction.MODRM_REGEX.search(opc)
+        imm = Instruction.IMM_REGEX.search(opc)
+        value = Instruction.VALUE_REGEX.search(opc)
+        opreg = Instruction.OPREG_REGEX.search(opc)
 
-        openc = opc.attrib.get("openc")
-        if openc:
-            self.operand_encoding = operand_encodings.get(openc, openc)
-        else: self.operand_encoding = None
-    
-    def __str__(self):
-        return f"\topcode {self.opcode} args {self.args} op_enc {self.operand_encoding}"
-    
-    def __eq__(self, other):
-        return self.opcode == other.opcode and self.operand_encoding == other.operand_encoding
-    
-    def __key(self):
-        return ("".join(self.opcode), "".join(self.operand_encoding or []))
-    
-    def __hash__(self):
-        return hash(self.__key())
+        print(ins.find("mnem").text)
+        if rex: print("rex\t", rex.group(1))
+        print(bytes)
+        if digit: print("digit\t", digit.group(1))
+        if modrm: print("modrm\t", modrm.group(0))
+        if imm: print("imm\t", imm.group(1))
+        if value: print("value\t", value.group(1))
+        if opreg: print("opreg\t", opreg.group(1))
 
-class Instruction:
-    SKIP_16BIT_REALMODE = ["rel16", "imm16", "ptr16:16"]
-
-    def contains_16bit_mode(args):
-        for needle in Instruction.SKIP_16BIT_REALMODE:
-            if needle in args:
-                return True
-
+class InstructionGroup:
     def __init__(self, common):
         self.brief = common.find("brief").text
-    
-        operand_encodings = {}
-        for operand_encoding in common.iter("oprndenc"):
-            name = operand_encoding.attrib["openc"]
-            
-            operands = []
-            operands.append(operand_encoding.find("oprnd1").text)
-            operands.append(operand_encoding.find("oprnd2").text)
-            operands.append(operand_encoding.find("oprnd3").text)
-            operands.append(operand_encoding.find("oprnd4").text)
-
-            operand_encodings[name] = operands
-
-        self.opcodes = []
-        for ins in common.iter("ins"):
-            self.opcodes.append(OpCode(ins, operand_encodings))
-        
-        # remove 16 bit real mode displacement value opcodes
-        self.opcodes = list(filter(lambda op: not Instruction.contains_16bit_mode(op.args), self.opcodes))
-
-        # de-duplicate opcodes with set
-        _opcodes = self.opcodes
-        self.opcodes = set()
-        for op in _opcodes:
-            self.opcodes.add(op)
+        self.instructions = [Instruction(ins) for ins in common.iter("ins")]
 
 
 def parse_file(path):
     tree = ET.parse(path)
     root = tree.getroot()
 
-    instructions = []
-    for common in root:
-        instructions.append(Instruction(common))
-    
-    for instruction in instructions:
-        print(instruction.brief)
-        for opcode in instruction.opcodes:
-            print(opcode)
+    groups = [InstructionGroup(common) for common in root.iter("common")]
+    return groups
 
 
 if __name__ == "__main__":
