@@ -1,5 +1,11 @@
 import re
 import xml.etree.ElementTree as ET
+from enum import Enum
+
+class InstructionType(Enum):
+    STANDARD = 0
+    VEX = 1
+    EVEX = 2
 
 class Instruction:
     REX_REGEX = re.compile("^REX\\.(.)")
@@ -10,13 +16,7 @@ class Instruction:
     VALUE_REGEX = re.compile("c(.)")
     OPREG_REGEX = re.compile("r(.)")
 
-    def __init__(self, ins):
-        self.x32m = ins.attrib["x32m"]
-        self.x64m = ins.attrib["x64m"]
-        
-        opc = ins.find("opc").text
-        if "VEX" in opc: return
-
+    def parse_standard(self, opc):
         rex = Instruction.REX_REGEX.search(opc)
         bytes = Instruction.BYTES_REGEX.findall(opc)
         digit = Instruction.DIGIT_REGEX.search(opc)
@@ -24,8 +24,6 @@ class Instruction:
         imm = Instruction.IMM_REGEX.search(opc)
         value = Instruction.VALUE_REGEX.search(opc)
         opreg = Instruction.OPREG_REGEX.search(opc)
-
-        self.mnemonic = ins.find("mnem").text
         self.bytes = bytes
 
         self.rex = None
@@ -43,6 +41,28 @@ class Instruction:
         if opreg: self.opreg = opreg.group(1)
 
         self.has_modrm = self.modrm or self.digit is not None
+
+    def parse_vex(self, opc):
+        pass
+
+    def parse_evex(self, opc):
+        raise NotImplemented("EVEX is not implemented")
+
+    def __init__(self, ins):
+        self.x32m = ins.attrib["x32m"]
+        self.x64m = ins.attrib["x64m"]
+        self.mnemonic = ins.find("mnem").text
+        
+        opc = ins.find("opc").text
+        if "EVEX" in opc:
+            self.type = InstructionType.EVEX
+            self.parse_evex(opc)
+        elif "VEX" in opc:
+            self.type = InstructionType.VEX
+            self.parse_vex(opc)
+        else:
+            self.type = InstructionType.STANDARD
+            self.parse_standard(opc)
 
         print(self)
     
