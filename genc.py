@@ -55,12 +55,14 @@ class Instruction:
         
         opc = ins.find("opc").text
         if "EVEX" in opc:
+            return
             self.type = InstructionType.EVEX
             self.parse_evex(opc)
         elif "VEX" in opc:
             self.type = InstructionType.VEX
             self.parse_vex(opc)
         else:
+            return
             self.type = InstructionType.STANDARD
             self.parse_standard(opc)
 
