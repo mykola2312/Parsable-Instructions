@@ -8,6 +8,24 @@ class InstructionType(Enum):
     EVEX = 2
 
 class Instruction:
+    def __init__(self, ins):
+        self._opc = ins.find("opc").text
+        self.x32m = ins.attrib["x32m"]
+        self.x64m = ins.attrib["x64m"]
+        self.mnemonic = ins.find("mnem").text
+        
+        self.bytes = None
+
+    def get_type(self):
+        pass
+    
+    def has_modrm(self):
+        pass
+
+    def __str__(self):
+        return f"{self.mnemonic} rex {self.rex} bytes {self.bytes} has_modrm {self.has_modrm()}"
+
+class InstructionCommon:
     REX_REGEX = re.compile("^REX\\.(.)")
     BYTES_REGEX = re.compile("([0-9A-F][0-9A-F])")
     DIGIT_REGEX = re.compile("\\/(\\d)")
@@ -16,14 +34,17 @@ class Instruction:
     VALUE_REGEX = re.compile("c(.)")
     OPREG_REGEX = re.compile("r(.)")
 
-    def parse_standard(self, opc):
-        rex = Instruction.REX_REGEX.search(opc)
-        bytes = Instruction.BYTES_REGEX.findall(opc)
-        digit = Instruction.DIGIT_REGEX.search(opc)
-        modrm = Instruction.MODRM_REGEX.search(opc)
-        imm = Instruction.IMM_REGEX.search(opc)
-        value = Instruction.VALUE_REGEX.search(opc)
-        opreg = Instruction.OPREG_REGEX.search(opc)
+class StandardInstruction(Instruction):
+    def __init__(self, ins):
+        super().__init__(ins)
+
+        rex = InstructionCommon.REX_REGEX.search(self._opc)
+        bytes = InstructionCommon.BYTES_REGEX.findall(self._opc)
+        digit = InstructionCommon.DIGIT_REGEX.search(self._opc)
+        modrm = InstructionCommon.MODRM_REGEX.search(self._opc)
+        imm = InstructionCommon.IMM_REGEX.search(self._opc)
+        value = InstructionCommon.VALUE_REGEX.search(self._opc)
+        opreg = InstructionCommon.OPREG_REGEX.search(self._opc)
         self.bytes = bytes
 
         self.rex = None
@@ -40,42 +61,35 @@ class Instruction:
         if value: self.value = value.group(1)
         if opreg: self.opreg = opreg.group(1)
 
-        self.has_modrm = self.modrm or self.digit is not None
-
-    def parse_vex(self, opc):
-        pass
-
-    def parse_evex(self, opc):
-        raise NotImplemented("EVEX is not implemented")
-
-    def __init__(self, ins):
-        self.x32m = ins.attrib["x32m"]
-        self.x64m = ins.attrib["x64m"]
-        self.mnemonic = ins.find("mnem").text
-        
-        opc = ins.find("opc").text
-        if "EVEX" in opc:
-            return
-            self.type = InstructionType.EVEX
-            self.parse_evex(opc)
-        elif "VEX" in opc:
-            self.type = InstructionType.VEX
-            self.parse_vex(opc)
-        else:
-            return
-            self.type = InstructionType.STANDARD
-            self.parse_standard(opc)
-
         print(self)
     
+    def get_type(self):
+        return InstructionType.STANDARD
+
+    def has_modrm(self):
+        return self.modrm or self.digit is not None
+    
     def __str__(self):
-        return f"{self.mnemonic} rex {self.rex} bytes {self.bytes} has_modrm {self.has_modrm} digit {self.digit} modrm {self.modrm} imm {self.imm} value {self.value} opreg {self.opreg}"
+        return f"{super().__str__()} digit {self.digit} modrm {self.modrm} imm {self.imm} value {self.value} opreg {self.opreg}"
+
+class VEXInstruction(Instruction):
+    def __init__(self, ins):
+        raise NotImplementedError("VEX is not implemented")
+
+class EVEXInstruction(Instruction):
+    def __init__(self, ins):
+        raise NotImplementedError("EVEX is not implemented")
+
+def parse_instruction(ins):
+    opc = ins.find("opc").text
+    if "EVEX" in opc: return EVEXInstruction(ins)
+    elif "VEX" in opc: return VEXInstruction(ins)
+    else: return StandardInstruction(ins)
 
 class InstructionGroup:
     def __init__(self, common):
         self.brief = common.find("brief").text
-        self.instructions = [Instruction(ins) for ins in common.iter("ins")]
-
+        self.instructions = [parse_instruction(ins) for ins in common.iter("ins")]
 
 def parse_file(path):
     tree = ET.parse(path)
