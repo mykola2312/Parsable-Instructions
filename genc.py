@@ -84,18 +84,15 @@ class VEXInstruction(Instruction):
 
         parts = self._opc.split(" ")
         (vex, opc) = (parts[0], "".join(parts[1:]))
-        
-        print(vex, opc)
-
         vex_parts = vex.split(".")
         
         self.lig = False
         if "128" in vex_parts or "L0" in vex_parts or "LZ" in vex_parts:
-            self.l = False
+            self.l = 128
         elif "256" in vex_parts or "L1" in vex_parts:
-            self.l = True
+            self.l = 256
         elif "LIG" in vex_parts:
-            self.l = False
+            self.l = 0
             self.lig = True
         else: raise RuntimeError("VEX.L is unknown!")
  
@@ -105,7 +102,7 @@ class VEXInstruction(Instruction):
         elif "WIG" in vex_parts:
             self.wig = True
             self.w = False
-        else: raise RuntimeError("VEX.W is uknown!")
+        else: self.w = False # just default it to False, it's not a big deal
 
         self.bytes = InstructionCommon.BYTES_REGEX.findall(opc)
         
@@ -129,7 +126,52 @@ class VEXInstruction(Instruction):
 
 class EVEXInstruction(Instruction):
     def __init__(self, ins):
-        raise NotImplementedError("EVEX is not implemented")
+        super().__init__(ins)
+
+        # fix string because intel employees keep bashing keyboard with random keys
+        self._opc = re.sub(r"\. ", ".", self._opc)
+
+        parts = self._opc.split(" ")
+        (evex, opc) = (parts[0], "".join(parts[1:]))
+        evex_parts = evex.split(".")
+
+        print(evex, opc)
+
+        self.lig = False
+        if "128" in evex_parts: self.l = 128
+        elif "256" in evex_parts: self.l = 256
+        elif "512" in evex_parts: self.l = 512
+        elif "LIG" in evex_parts or "LLIG" in evex_parts:
+            self.l = 0
+            self.lig = True
+        else: raise RuntimeError("EVEX.L and EVEX.LIG is unknown!")
+        
+        self.wig = False
+        if "W0" in evex_parts: self.w = False
+        elif "W1" in evex_parts: self.w = True
+        elif "WIG" in evex_parts:
+            self.w = False
+            self.wig = True
+        else: self.w = False
+
+        self.bytes = InstructionCommon.BYTES_REGEX.findall(opc)
+        
+        modrm = InstructionCommon.MODRM_REGEX.search(opc)
+        imm = InstructionCommon.IMM_REGEX.search(opc)
+        
+        self.modrm = True if modrm else False
+        self.imm = imm.group(1) if imm else None
+
+        print(self)
+    
+    def get_type(self):
+        return InstructionType.EVEX
+
+    def has_modrm(self):
+        return self.modrm
+
+    def __str__(self):
+        return f"{super().__str__()} l {self.l} lig {self.lig} w {self.w} wig {self.wig}"
 
 def parse_instruction(ins):
     opc = ins.find("opc").text
@@ -151,4 +193,5 @@ def parse_file(path):
 
 
 if __name__ == "__main__":
-    parse_file("xml/raw/x86/Intel/AZ.xml")
+    #parse_file("xml/raw/x86/Intel/AZ.xml")
+    parse_file("xml/raw/x86/Intel/AVX512_r22.xml")
