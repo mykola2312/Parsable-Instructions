@@ -42,15 +42,8 @@ class Instruction:
     def has_opreg(self):
         return False
 
-    def does_modrm(self):
-        if self.has_modrm():
-            if self.has_digit():
-                return self.modrm or self.digit is not None
-            else: return self.modrm is not None
-        else: return False
-
     def __str__(self):
-        return f"<{self.get_type()}> {self.mnemonic} bytes {self.bytes} does_modrm {self.does_modrm()}"
+        return f"<{self.get_type()}> {self.mnemonic} bytes {self.bytes} rex {self.has_rex()} digit {self.has_digit()} modrm {self.has_modrm()} imm {self.has_imm()} value {self.has_value()} opreg {self.has_opreg()}"
 
 class InstructionCommon:
     REX_REGEX = re.compile("^REX\\.(.)")
@@ -98,7 +91,7 @@ class StandardInstruction(Instruction):
         return self.digit is not None
 
     def has_modrm(self):
-        return self.modrm
+        return self.modrm or (self.digit is not None)
 
     def has_imm(self):
         return self.imm is not None
@@ -108,9 +101,6 @@ class StandardInstruction(Instruction):
 
     def has_opreg(self):
         return self.opreg is not None
-    
-    def __str__(self):
-        return f"{super().__str__()} rex {self.rex} digit {self.digit} modrm {self.modrm} imm {self.imm} value {self.value} opreg {self.opreg}"
 
 class VEXInstruction(Instruction):
     def __init__(self, ins):
@@ -157,9 +147,6 @@ class VEXInstruction(Instruction):
     
     def has_imm(self):
         return self.imm is not None
-    
-    def __str__(self):
-        return f"{super().__str__()} l {self.l} lig {self.lig} w {self.w} wig {self.wig}"
 
 class EVEXInstruction(Instruction):
     def __init__(self, ins):
@@ -207,9 +194,6 @@ class EVEXInstruction(Instruction):
 
     def has_imm(self):
         return self.imm is not None
-
-    def __str__(self):
-        return f"{super().__str__()} l {self.l} lig {self.lig} w {self.w} wig {self.wig}"
 
 def parse_instruction(ins):
     opc = ins.find("opc").text
