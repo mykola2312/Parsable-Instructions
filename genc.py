@@ -12,6 +12,11 @@ class InstructionType(Enum):
         elif self == InstructionType.VEX: return "vex"
         elif self == InstructionType.EVEX: return "evex"
 
+    def value(self):
+        if self == InstructionType.STANDARD: return 0
+        elif self == InstructionType.VEX: return 1
+        elif self == InstructionType.EVEX: return 2
+
 class Instruction:
     def __init__(self, ins):
         self._opc = ins.find("opc").text
@@ -213,9 +218,26 @@ def parse_file(path):
     groups = [InstructionGroup(common) for common in root.iter("common")]
     return groups
 
+def generate_table(groups):
+    table_len = 0
+    # header
+    print("#include \"rtdisasm_table.h\"\n")
+    print("const instruction_t rtdisasm_table[] = {")
+    # entries
+    for group in groups:
+        for i in group.instructions:
+            opcode = ",".join(["0x{}".format(byte) for byte in i.bytes])
+            opcode_len = len(i.bytes)
+            print("\t{{ .info = {{ .type = {}, .has_rex = {}, .has_digit = {}, .has_modrm = {}, .has_imm = {}, .has_value = {}, .has_opreg = {} }}, .opcode_len = {}, .opcode = {{ {} }}  }},".format(
+                i.get_type().value(), int(i.has_rex()), int(i.has_digit()), int(i.has_modrm()), int(i.has_imm()), int(i.has_value()), int(i.has_opreg()), opcode_len, opcode
+            ))
+            table_len += 1
+    # footer
+    print("}};\n\nconst unsigned rtdisasm_table_len = {};".format(table_len))
 
 if __name__ == "__main__":
     groups = parse_file("xml/raw/x86/Intel/AZ.xml")
-    for group in groups:
-        for instruction in group.instructions:
-            print(instruction)
+    #groups.extend(parse_file("xml/raw/x86/Intel/AVX512_r22.xml"))
+    #groups.extend(parse_file("xml/raw/x86/Intel/AVX512_r24.xml"))
+
+    generate_table(groups)
