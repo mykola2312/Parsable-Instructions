@@ -3,3 +3,4 @@ and can tell size of immediate (ib iw id for example). The /digit can also indic
 The size of displacement is also dictated by cw/cd.
 ModRM also can tell if there is SIB byte or no.
 VEX prefixes. 0xC5 for 2-byte VEX and 0xC4 for 3-byte prefix
+For VEX instructions all we need to know is VEX prefix length, opcode bytes, ModRM presence and immediates

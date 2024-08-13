@@ -7,6 +7,11 @@ class InstructionType(Enum):
     VEX = 1
     EVEX = 2
 
+    def __str__(self):
+        if self == InstructionType.STANDARD: return "std"
+        elif self == InstructionType.VEX: return "vex"
+        elif self == InstructionType.EVEX: return "evex"
+
 class Instruction:
     def __init__(self, ins):
         self._opc = ins.find("opc").text
@@ -23,7 +28,7 @@ class Instruction:
         pass
 
     def __str__(self):
-        return f"{self.mnemonic} rex {self.rex} bytes {self.bytes} has_modrm {self.has_modrm()}"
+        return f"<{self.get_type()}> {self.mnemonic} bytes {self.bytes} has_modrm {self.has_modrm()}"
 
 class InstructionCommon:
     REX_REGEX = re.compile("^REX\\.(.)")
@@ -60,8 +65,6 @@ class StandardInstruction(Instruction):
         if imm: self.imm = imm.group(1)
         if value: self.value = value.group(1)
         if opreg: self.opreg = opreg.group(1)
-
-        print(self)
     
     def get_type(self):
         return InstructionType.STANDARD
@@ -70,11 +73,59 @@ class StandardInstruction(Instruction):
         return self.modrm or self.digit is not None
     
     def __str__(self):
-        return f"{super().__str__()} digit {self.digit} modrm {self.modrm} imm {self.imm} value {self.value} opreg {self.opreg}"
+        return f"{super().__str__()} rex {self.rex} digit {self.digit} modrm {self.modrm} imm {self.imm} value {self.value} opreg {self.opreg}"
 
 class VEXInstruction(Instruction):
     def __init__(self, ins):
-        raise NotImplementedError("VEX is not implemented")
+        super().__init__(ins)
+
+        # fix string because intel employees keep bashing keyboard with random keys
+        self._opc = re.sub(r"\. ", ".", self._opc)
+
+        parts = self._opc.split(" ")
+        (vex, opc) = (parts[0], "".join(parts[1:]))
+        
+        print(vex, opc)
+
+        vex_parts = vex.split(".")
+        
+        self.lig = False
+        if "128" in vex_parts or "L0" in vex_parts or "LZ" in vex_parts:
+            self.l = False
+        elif "256" in vex_parts or "L1" in vex_parts:
+            self.l = True
+        elif "LIG" in vex_parts:
+            self.l = False
+            self.lig = True
+        else: raise RuntimeError("VEX.L is unknown!")
+ 
+        self.wig = False
+        if "W0" in vex_parts: self.w = False
+        elif "W1" in vex_parts: self.w = True
+        elif "WIG" in vex_parts:
+            self.wig = True
+            self.w = False
+        else: raise RuntimeError("VEX.W is uknown!")
+
+        self.bytes = InstructionCommon.BYTES_REGEX.findall(opc)
+        
+        modrm = InstructionCommon.MODRM_REGEX.search(opc)
+        imm = InstructionCommon.IMM_REGEX.search(opc)
+
+        self.modrm = True if modrm else False
+        self.imm = imm.group(1) if imm else None
+
+        print(self)
+
+    
+    def get_type(self):
+        return InstructionType.VEX
+
+    def has_modrm(self):
+        return self.modrm
+    
+    def __str__(self):
+        return f"{super().__str__()} l {self.l} lig {self.lig} w {self.w} wig {self.wig}"
 
 class EVEXInstruction(Instruction):
     def __init__(self, ins):
