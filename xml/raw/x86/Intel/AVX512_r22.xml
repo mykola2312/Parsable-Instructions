@@ -16555,7 +16555,7 @@ THE SOFTWARE.
 		<ins x32m="V" x64m="V">
 			<mnem>VPMOVW2M</mnem>
 			<args>k1,zmm1</args>
-			<opc openc="RM">EVEX.12.F3.0F38.W1 29 /r</opc>
+			<opc openc="RM">EVEX.512.F3.0F38.W1 29 /r</opc>
 			<cpuid>
 				<flag>AVX512BW</flag>
 			</cpuid>
