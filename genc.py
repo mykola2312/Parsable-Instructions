@@ -218,6 +218,8 @@ def parse_file(path):
     groups = [InstructionGroup(common) for common in root.iter("common")]
     return groups
 
+# TODO: instead of gzipping pipe directly C code into GCC
+# FIXME: instruction_t has no actual rex, imm, value values
 def generate_table(groups):
     table_len = 0
     # header
